@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+    tools{
+        maven 'maven_3_5_0'
+    }
+    stages{
+        stage('Build Maven'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/ashish67876/Hello-World-Java/tree/main']]])
+                sh 'mvn clean install'
+            }
+        }
+        stage('Build docker image'){
+            steps{
+                script{
+                    sh 'docker build -t ashish233001/java-appilication .'
+                }
+            }
+        }
+        stage('Push image to Hub'){
+            steps{
+                script{
+                   withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
+                   sh 'docker login -u ashish233001 -p ${dockerhubpwd}'
+
+}
+                   sh 'docker push ashish233001/java-appilcation:latest'
+                }
+            }
+        }
+        stage('Deploy to k8s'){
+            steps{
+                script{
+                    sh 'kubectl apply -f java-appication'
+                }
+            }
+        }
+    }
+}
